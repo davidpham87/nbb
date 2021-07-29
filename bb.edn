@@ -2,6 +2,6 @@
  {shadow-server (shell "npx shadow-cljs server")
   shadow-compile (shell "npx shadow-cljs compile :app")
   shadow-node-repl (shell "npx shadow-cljs node-repl")
-  release (do (shell "npx shadow-cljs --force-spawn release app")
-              (shell "chmod +x out/dist.js"))
+  release (do (shell "npx shadow-cljs --force-spawn release modules")
+              (shell "chmod +x out/tbd.main.js"))
   publish (shell "npm publish")}}

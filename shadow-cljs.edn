@@ -2,9 +2,11 @@
  :dependencies [[io.nervous/cljs-nodejs-externs "0.2.0"]
                 [reagent "1.1.0"]
                 [borkdude/sci "0.2.6"]]
- :builds {:modules {:target :npm-module
+ :builds {:modules {:compiler-options {:optimizations :advanced}
+                    :target :npm-module
                     :output-dir "out"
-                    :entries [tbd.core
+                    :entries [tbd.main
+                              tbd.core
                               tbd.reagent]}
           ;; :main {:target :node-script
           ;;        :main tbd.main/main
