@@ -1,6 +1,5 @@
 {
   "name": "nbb",
-  "type": "module",
   "main": "out/nbb_main.js",
   "bin": {
     "nbb": "./out/nbb_main.js"

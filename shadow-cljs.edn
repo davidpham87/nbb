@@ -1,10 +1,12 @@
 {:deps true
  :builds {:modules {:js-options {:keep-as-import #{"fs" "module" "path"}}
                     :compiler-options {:infer-externs :auto}
-                    :target :esm
+                    :target :node-library
+                    :exports {:main nbb.main/main}
                     :runtime :node
                     :output-dir "out"
-                    :modules
+                    :output-to "out/nbb.js"
+                    #_#_:modules
                     {:nbb_core {:init-fn nbb.core/init}
                      :nbb_main {:init-fn nbb.main/main
                                 :depends-on #{:nbb_core}}
