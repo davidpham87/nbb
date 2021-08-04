@@ -30,14 +30,13 @@
 
 (def loaded-modules (atom {}))
 
-(defn import-via* [path]
+(defn import-via* [lib url]
   (-> (esm/dynamic-import "import-meta-resolve")
       (.then (fn [mod]
                (let [resolve (.-resolve mod)]
-                 (fn [lib]
-                   (.then (resolve lib (str "file://" path))
-                          (fn [resolved]
-                            (esm/dynamic-import resolved)))))))))
+                 (.then (resolve lib url)
+                        (fn [resolved]
+                          (esm/dynamic-import resolved))))))))
 
 (def import-via (memoize import-via*))
 
@@ -52,10 +51,11 @@
         ;; built-ins
         (reagent.core reagent.dom reagent.dom.server)
         (let [script-dir (:script-dir ctx)]
-          (-> (-> (import-via "react" script-dir) ;; resolve react from script location
+          (-> (-> (import-via "react" (str "file://" script-dir)) ;; resolve react from script location
                   (.then (fn [_react]
-                           ;; then load local reagent module
-                           (esm/dynamic-import "./nbb_reagent.js")))
+                           (let [murl (js* "import.meta.url")]
+                             ;; then load local reagent module
+                             (import-via "../nbb_reagent.js" murl))))
                   (.then (fn [_reagent]
                            (when as
                              (sci/binding [sci/ns ns-obj]
