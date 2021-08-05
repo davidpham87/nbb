@@ -8,16 +8,14 @@
   },
   "description": "Babashka-like tool for Node.js.",
   "dependencies": {
-    "import-meta-resolve": "^1.1.1"
   },
   "devDependencies": {
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
-    "shadow-cljs": "^2.15.2"
-  },
-  "optionalDependencies": {
-    "react": "^17.0.2",
-    "react-dom": "^17.0.2"
+    "shadow-cljs": "^2.15.2",
+    "csv-parse": "^4.16.0",
+    "import-meta-resolve": "^1.1.1",
+    "shelljs": "^0.8.4"
   },
   "repository": {
     "type": "git",

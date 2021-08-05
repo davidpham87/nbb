@@ -1,6 +1,6 @@
 (ns nbb.main
   (:require ["fs" :as fs]
-            ["module" :as mod1 :refer [createRequire]]
+            ["module" :as m :refer [createRequire]]
             ["path" :as path]
             [nbb.core :as nbb]
             [sci.core :as sci]))
@@ -14,6 +14,8 @@
       (set! (.-require goog/global) require))
     (if script-file
       (let [source (str (fs/readFileSync script-file))]
+        (set! (.-NODE_PATH js/process.env) (path/resolve (path/dirname script-file) "node_modules"))
+        (m/_initPaths)
         ;; NOTE: binding doesn't work as expected since eval-code is async.
         ;; Since nbb currently is only called with a script file argument, this suffices
         (sci/alter-var-root nbb/command-line-args (constantly (seq (js/process.argv.slice 3))))
