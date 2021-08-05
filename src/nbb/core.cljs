@@ -1,9 +1,12 @@
 (ns nbb.core
   (:require
+   ["module" :as m]
    [clojure.string :as str]
    [goog.object :as gobj]
    [sci.core :as sci]
    [shadow.esm :as esm]))
+
+(m/_initPaths)
 
 (def universe goog/global)
 
