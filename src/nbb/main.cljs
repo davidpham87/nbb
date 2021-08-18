@@ -26,8 +26,8 @@
             (throw (ex-info (str "Unrecognized options:"  args) {})))))
       opts)))
 
-(defn main []
-  (let [[_ _ & args] js/process.argv
+(defn main [& args]
+  (let [args (or args (drop 2 js/process.argv))
         opts (parse-args args)
         script-file (:script opts)
         expr (:expr opts)
