@@ -1,0 +1,12 @@
+{
+  "devDependencies": {
+    "electron": "^14.0.0"
+  },
+  "dependencies": {
+    "esm": "^3.2.25",
+    "nbb": "^0.0.69"
+  },
+  "scripts": {
+    "electron": "./node_modules/.bin/electron  ./src/electron/index.js --trace-warning"
+  }
+}
