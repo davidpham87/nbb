@@ -4,7 +4,7 @@
   },
   "dependencies": {
     "esm": "^3.2.25",
-    "nbb": "^0.0.69"
+    "nbb": "file:../.."
   },
   "scripts": {
     "electron": "./node_modules/.bin/electron  ./src/electron/index.js --trace-warning"

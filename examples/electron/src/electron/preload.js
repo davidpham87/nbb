@@ -1,4 +1,4 @@
-import 'nbb';
+require('nbb');
 
 window.addEventListener('DOMContentLoaded', () => {
   const replaceText = (selector, text) => {
