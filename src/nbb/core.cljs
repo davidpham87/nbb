@@ -219,7 +219,8 @@
   "Evaluates top level forms asynchronously. Returns promise of last value."
   [bindings prev-val reader]
   (let [next-val (try
-                   (sci/parse-next @sci-ctx reader {:features #{:cljs}})
+                   (with-bindings* bindings
+                     #(sci/parse-next @sci-ctx reader {:features #{:cljs}}))
                    (catch :default e
                      (js/Promise.reject e)))]
     (if-not (= :sci.core/eof next-val)
