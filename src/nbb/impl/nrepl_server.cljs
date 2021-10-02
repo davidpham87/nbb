@@ -72,19 +72,17 @@
 
 (defn do-handle-eval [{:keys [ns code sci-last-error _sci-ctx-atom _load-file?] :as request} send-fn]
   (with-async-bindings
-    {sci/ns ns
-     sci/print-length @sci/print-length
+    {sci/print-length @sci/print-length
      sci/print-newline true
      sci/print-fn (fn [s]
                     (send-fn request {"out" s}))}
-    (-> (nbb/eval-expr nil (sci/reader code))
-        (doto (#(.log js/console ":expr" %)))
+    (-> (nbb/eval-expr nil (sci/reader code) {sci/ns ns})
         (.then (fn [v]
-                 (.log js/console ":type" (type v))
-                 (reset! last-ns @sci/ns)
-                 (send-fn request {"value" (pr-str v)
-                                   "ns" (str @sci/ns)})
-                 (send-fn request {"status" ["done"]})))
+                 (let [v (.-val v)]
+                   (reset! last-ns @sci/ns)
+                   (send-fn request {"value" (pr-str v)
+                                     "ns" (str @sci/ns)})
+                   (send-fn request {"status" ["done"]}))))
         (.catch (fn [e]
                   (sci/alter-var-root sci-last-error (constantly e))
                   (let [data (ex-data e)]

@@ -55,7 +55,13 @@
               (.then (fn [val]
                        (let [val (nbb/unwrap val)]
                          (when (and expr (some? val))
-                           (prn val)))
+                           (if (instance? js/Promise val)
+                             (-> val
+                                 (.then (fn [_]
+                                          (.log js/console val)))
+                                 (.catch (fn [err]
+                                           (error/error-handler err opts))))
+                             (prn val))))
                        val))
               (.catch (fn [err]
                         (error/error-handler err opts)

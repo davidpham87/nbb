@@ -5,8 +5,16 @@
             [babashka.tasks :as tasks]
             [clojure.edn :as edn]
             [clojure.string :as str]
-            [clojure.test :as t :refer [deftest is testing]]
+            [clojure.test :as t :refer [deftest is testing
+                                        *report-counters*]]
             [nbb-nrepl-tests]))
+
+(defmethod clojure.test/report :end-test-var [_m]
+  (when-let [rc *report-counters*]
+    (let [{:keys [:fail :error]} @rc]
+      (when (or (pos? fail) (pos? error))
+        (println "=== Failing fast")
+        (System/exit 1)))))
 
 (def windows? (-> (System/getProperty "os.name")
                   str/lower-case
@@ -61,8 +69,10 @@
   (nbb {:out :inherit} "examples/chalk/example.cljs"))
 
 (deftest promesa-test
-  (is (= 2 (nbb "-e" "(require '[promesa.core :as p])
-                      (p/let [x (js/Promise.resolve 1)] (+ x 1))"))))
+  (is (= "Promise { 2 }"
+         (str/trim
+          (nbb* "-e" "(require '[promesa.core :as p])
+                      (p/let [x (js/Promise.resolve 1)] (+ x 1))")))))
 
 (deftest classpath-test
   (let [deps '{com.github.seancorfield/honeysql {:git/tag "v2.0.0-rc5" :git/sha "01c3a55"}}

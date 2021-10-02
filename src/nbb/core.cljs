@@ -150,7 +150,9 @@
           ;; assume symbol
           (if (sci/eval-form @sci-ctx (list 'clojure.core/find-ns (list 'quote libname)))
             ;; built-in namespace
-            (do (sci/eval-form @sci-ctx (list 'require (list 'quote fst)))
+            (do (with-bindings* bindings
+                  (fn []
+                    (sci/eval-form @sci-ctx (list 'require (list 'quote fst)))))
                 (handle-libspecs (next libspecs) bindings))
             (let [file (str/replace (str munged) #"\." "/")
                   files [(str file ".cljs") (str file ".cljc")]
