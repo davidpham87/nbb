@@ -53,8 +53,9 @@
                     (:nrepl-server opts)
                     (esm/dynamic-import "./nbb_nrepl_server.js"))
               (.then (fn [val]
-                       (when (and expr (some? val))
-                         (prn val))
+                       (let [val (nbb/unwrap val)]
+                         (when (and expr (some? val))
+                           (prn val)))
                        val))
               (.catch (fn [err]
                         (error/error-handler err opts)

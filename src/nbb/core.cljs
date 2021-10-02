@@ -238,7 +238,10 @@
           (catch :default e
             (js/Promise.reject e))))
       ;; wrap normal value in promise
-      (js/Promise.resolve prev-val))))
+      (js/Promise.resolve #js {:val prev-val}))))
+
+(defn unwrap [eval-result]
+  (.-val ^js eval-result))
 
 (defn eval-string* [s]
   (with-async-bindings {sci/ns @sci/ns}

@@ -78,7 +78,9 @@
      sci/print-fn (fn [s]
                     (send-fn request {"out" s}))}
     (-> (nbb/eval-expr nil (sci/reader code))
+        (doto (#(.log js/console ":expr" %)))
         (.then (fn [v]
+                 (.log js/console ":type" (type v))
                  (reset! last-ns @sci/ns)
                  (send-fn request {"value" (pr-str v)
                                    "ns" (str @sci/ns)})
