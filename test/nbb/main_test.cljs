@@ -39,53 +39,53 @@
                (is (true? v))))))
 
 (deftest-async load-string-file-test
-  (-> ;; (nbb/load-string "(ns foo) (defn foo [] (+ 1 2 3)) (ns-name *ns*)")
-      ;; (.then nbb/unwrap)
-      ;; (.then (fn [ns-name]
-      ;;          (is (= 'foo ns-name))))
-   (js/Promise.resolve nil)
-   (.then (fn [_] (nbb/load-string
-                      "(nbb.core/load-string \"(ns foo) (prn (str *ns*)) (defn foo [] (+ 1 2 3)) (ns-name *ns*)\")")))
+  (->
+   (nbb/load-string "(ns foo) (defn foo [] (+ 1 2 3)) (ns-name *ns*)")
+      (.then nbb/unwrap)
+      (.then (fn [ns-name]
+               (is (= 'foo ns-name))))
+      (.then (fn [_] (nbb/load-string
+                      "(nbb.core/load-string \"(ns foo) (defn foo [] (+ 1 2 3)) (ns-name *ns*)\")")))
       (.then nbb/unwrap)
       (.then nbb/unwrap)
       (.then (fn [ns-name]
                (testing "internal load-string"
                  (is (= 'foo ns-name)))))
-      ;; (.then (fn [_]
-      ;;          (nbb/load-string "(ns-name *ns*)")))
-      ;; (.then nbb/unwrap)
-      ;; (.then (fn [ns-name]
-      ;;          (is (= 'user ns-name))))
-      ;; (.then (fn [_]
-      ;;          (nbb/load-file "test-scripts/script.cljs")))
-      ;; (.then nbb/unwrap)
-      ;; (.then (fn [val]
-      ;;          (is (= 6 val))))
-      ;; (.then (fn [_]
-      ;;          (nbb/load-string "(nbb.core/load-file \"test-scripts/script.cljs\")")))
-      ;; (.then nbb/unwrap)
-      ;; (.then nbb/unwrap)
-      ;; (.then (fn [val]
-      ;;          (is (= 6 val))))
+      (.then (fn [_]
+               (nbb/load-string "(ns-name *ns*)")))
+      (.then nbb/unwrap)
+      (.then (fn [ns-name]
+               (is (= 'user ns-name))))
+      (.then (fn [_]
+               (nbb/load-file "test-scripts/script.cljs")))
+      (.then nbb/unwrap)
+      (.then (fn [val]
+               (is (= 6 val))))
+      (.then (fn [_]
+               (nbb/load-string "(nbb.core/load-file \"test-scripts/script.cljs\")")))
+      (.then nbb/unwrap)
+      (.then nbb/unwrap)
+      (.then (fn [val]
+               (is (= 6 val))))
       )
   )
 
-;; (def pf *print-fn*)
+(def pf *print-fn*)
 
-;; (deftest-async args-test
-;;   {:before (set! *print-fn* (constantly nil))
-;;    :after (set! *print-fn* pf)}
-;;   (-> (main-with-args ["test-scripts/script.cljs"])
-;;       (.then (fn [res]
-;;                (is (= 6 res))))
-;;       (.then (fn [_]
-;;                (main-with-args ["-e" "(+ 1 2 3 4)"])))
-;;       (.then (fn [res]
-;;                (is (= 10 res))))
-;;       (.then (fn [_]
-;;                (main-with-args["-e" "(nbb.core/load-file \"test-scripts/script.cljs\")"])))
-;;       (.then (fn [res]
-;;                (is (= 6 res))))))
+(deftest-async args-test
+  {:before (set! *print-fn* (constantly nil))
+   :after (set! *print-fn* pf)}
+  (-> (main-with-args ["test-scripts/script.cljs"])
+      (.then (fn [res]
+               (is (= 6 res))))
+      (.then (fn [_]
+               (main-with-args ["-e" "(+ 1 2 3 4)"])))
+      (.then (fn [res]
+               (is (= 10 res))))
+      (.then (fn [_]
+               (main-with-args["-e" "(nbb.core/load-file \"test-scripts/script.cljs\")"])))
+      (.then (fn [res]
+               (is (= 6 res))))))
 
 ;; (defn normalize-filename [s]
 ;;   (str/replace s "\\" "/"))
@@ -102,77 +102,81 @@
 ;;                  (is (path/isAbsolute f))
 ;;                  (is (str/ends-with? f "test-scripts/load_file_test.cljs" )))))))
 
-;; (deftest-async eval-string-test
-;;   (-> (nbb/load-string "(+ 1 2 3)")
-;;       (.then nbb/unwrap)
-;;       (.then (fn [res]
-;;                (is (= 6 res))))
-;;       (.then (fn [_]
-;;                (main-with-args ["test-scripts/plet.cljs"])))
-;;       (.then nbb/unwrap)
-;;       (.then (fn [res]
-;;                (is (= [1 2 "<!DOCTYPE html><html" 1] res))))))
+(deftest-async eval-string-test
+  (-> (nbb/load-string "(+ 1 2 3)")
+      (.then nbb/unwrap)
+      (.then (fn [res]
+               (is (= 6 res))))
+      (.then (fn [_]
+               (main-with-args ["test-scripts/plet.cljs"])))
+      (.then nbb/unwrap)
+      (.then (fn [res]
+               (is (= [1 2 "<!DOCTYPE html><html" 1] res))))))
 
-;; (deftest-async require-built-in-namespace-test
-;;   {:before (set! *print-fn* (constantly nil))
-;;    :after (set! *print-fn* pf)}
-;;   (-> (main-with-args ["-e"
-;;                        "(require '[clojure.string :as s :refer [includes?] :rename {includes? inc?}])
-;;                         [(some? s/replace) (some? inc?) (= inc? s/includes?)]"])
-;;       (.then (fn [res]
-;;                (is (= [true true true] res))))))
+(deftest-async require-built-in-namespace-test
+  {:before (set! *print-fn* (constantly nil))
+   :after (set! *print-fn* pf)}
+  (-> (main-with-args ["-e"
+                       "(require '[clojure.string :as s :refer [includes?] :rename {includes? inc?}])
+                        [(some? s/replace) (some? inc?) (= inc? s/includes?)]"])
+      (.then (fn [res]
+               (is (= [true true true] res))))))
 
-;; (deftest-async require-node-module-test
-;;   {:before (set! *print-fn* (constantly nil))
-;;    :after (set! *print-fn* pf)}
-;;   (-> (main-with-args ["-e"
-;;                        "(require '[\"fs\" :as fs :refer [existsSync] :rename {existsSync exists?}])
-;;                                [(some? fs/existsSync) (some? exists?) (= exists? fs/existsSync)]"])
-;;       (.then (fn [res]
-;;                (is (= [true true true] res))))))
+(deftest-async require-node-module-test
+  {:before (set! *print-fn* (constantly nil))
+   :after (set! *print-fn* pf)}
+  (-> (main-with-args ["-e"
+                       "(require '[\"fs\" :as fs :refer [existsSync] :rename {existsSync exists?}])
+                               [(some? fs/existsSync) (some? exists?) (= exists? fs/existsSync)]"])
+      (.then (fn [res]
+               (is (= [true true true] res))))))
 
-;; (deftest-async require-namespace-from-file-test
-;;   {:before (set! *print-fn* (constantly nil))
-;;    :after (set! *print-fn* pf)}
-;;   (-> (main-with-args ["--classpath" "test-scripts" "-e"
-;;                        "(require '[script :as s :refer [script-fn] :rename {script-fn f}])
-;;                                [(s/script-fn) (f)]"])
-;;       (.then (fn [res]
-;;                (is (= [:hello :hello] res))))))
+(deftest-async require-namespace-from-file-test
+  {:before (set! *print-fn* (constantly nil))
+   :after (set! *print-fn* pf)}
+  (-> (main-with-args ["--classpath" "test-scripts" "-e"
+                       "(require '[script :as s :refer [script-fn] :rename {script-fn f}])
+                               [(s/script-fn) (f)]"])
+      (.then (fn [res]
+               (is (= [:hello :hello] res))))))
 
-;; (deftest-async error-test
-;;   (-> (nbb/load-string "(+ 1 2 3) (assoc 1 2)")
-;;       (.catch (fn [err]
-;;                 (let [d (ex-data err)]
-;;                   (is (= 1 (:line d)))
-;;                   (is (= 11 (:column d))))))))
+(deftest-async error-test
+  (-> (nbb/load-string "(+ 1 2 3) (assoc 1 2)")
+      (.catch (fn [err]
+                (let [d (ex-data err)]
+                  (is (= 1 (:line d)))
+                  (is (= 11 (:column d))))))))
 
-;; (deftest-async gobject-test
-;;   (-> (nbb/load-string "(require '[goog.object :as gobj :refer [get] :rename {get jget}])
-;;                         (def x #js {}) (gobj/set x \"x\" 1)
-;;                         (gobj/set x \"y\" 2) (jget x \"y\")")
-;;       (.then (fn [val]
-;;                (is (= 2 val))))))
+(deftest-async gobject-test
+  (-> (nbb/load-string "(require '[goog.object :as gobj :refer [get] :rename {get jget}])
+                        (def x #js {}) (gobj/set x \"x\" 1)
+                        (gobj/set x \"y\" 2) (jget x \"y\")")
+      (.then nbb/unwrap)
+      (.then (fn [val]
+               (is (= 2 val))))))
 
-;; (deftest-async gobject-get-exclude-test
-;;   (-> (nbb/load-string "(ns foo (:refer-clojure :exclude [get])
-;;                                 (:require [goog.object :as gobj :refer [get]]))
-;;                         (get #js{:y 2} \"y\") ")
-;;       (.then (fn [val]
-;;                (is (= 2 val))))))
+(deftest-async gobject-get-exclude-test
+  (-> (nbb/load-string "(ns foo (:refer-clojure :exclude [get])
+                                (:require [goog.object :as gobj :refer [get]]))
+                        (get #js{:y 2} \"y\") ")
+      (.then nbb/unwrap)
+      (.then (fn [val]
+               (is (= 2 val))))))
 
-;; (deftest-async with-out-str-test
-;;   (-> (nbb/load-string "[(with-out-str (println :hello))
-;;                          (with-out-str (prn :hello))
-;;                          (with-out-str (print :hello))]")
-;;       (.then (fn [val]
-;;                (is (= [":hello\n" ":hello\n" ":hello"]
-;;                       val))))))
+(deftest-async with-out-str-test
+  (-> (nbb/load-string "[(with-out-str (println :hello))
+                         (with-out-str (prn :hello))
+                         (with-out-str (print :hello))]")
+      (.then nbb/unwrap)
+      (.then (fn [val]
+               (is (= [":hello\n" ":hello\n" ":hello"]
+                      val))))))
 
-;; (deftest-async no-op-vars
-;;   (-> (nbb/load-string "[*warn-on-infer* (set! *warn-on-infer* true)]")
-;;       (.then (fn [val]
-;;                (is (vector? val))))))
+(deftest-async no-op-vars
+  (-> (nbb/load-string "[*warn-on-infer* (set! *warn-on-infer* true)]")
+      (.then nbb/unwrap)
+      (.then (fn [val]
+               (is (vector? val))))))
 
 (defn init []
   (t/run-tests *ns*))

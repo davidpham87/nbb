@@ -38,34 +38,41 @@
 (def normalize-libname
   {'clojure.pprint 'cljs.pprint})
 
-(defn load-module [m libname as refer rename libspecs]
+(defn with-bindings* [m f]
+  (sci.impl.vars/push-thread-bindings m)
+  (try (f)
+       (finally (sci.impl.vars/pop-thread-bindings))))
+
+(defn load-module [m libname as refer rename libspecs bindings]
   (-> (esm/dynamic-import m)
       (.then (fn [_module]
                (let [nlib (normalize-libname libname)]
-                 (when-not (= nlib libname)
-                   (when as
-                     (sci/eval-form @sci-ctx
-                                    (list 'alias
-                                          (list 'quote nlib)
-                                          (list 'quote libname)))))
-                 (let [libname (or nlib libname)]
-                   (when as
-                     (sci/eval-form @sci-ctx
-                                    (list 'alias
-                                          (list 'quote as)
-                                          (list 'quote libname))))
-                   (when (seq refer)
-                     (sci/eval-form @sci-ctx
-                                    (list 'clojure.core/refer
-                                          (list 'quote libname)
-                                          :only (list 'quote refer)
-                                          :rename (list 'quote rename)))))
-                 (handle-libspecs (next libspecs)))))))
+                 (with-bindings* bindings
+                   (fn []
+                     (when-not (= nlib libname)
+                       (when as
+                         (sci/eval-form @sci-ctx
+                                        (list 'alias
+                                              (list 'quote nlib)
+                                              (list 'quote libname)))))
+                     (let [libname (or nlib libname)]
+                       (when as
+                         (sci/eval-form @sci-ctx
+                                        (list 'alias
+                                              (list 'quote as)
+                                              (list 'quote libname))))
+                       (when (seq refer)
+                         (sci/eval-form @sci-ctx
+                                        (list 'clojure.core/refer
+                                              (list 'quote libname)
+                                              :only (list 'quote refer)
+                                              :rename (list 'quote rename)))))))
+                 (handle-libspecs (next libspecs) bindings))))))
 
 (def ^:private  windows?
   (= "win32" js/process.platform))
 
-(defn ^:private handle-libspecs [libspecs]
+(defn ^:private handle-libspecs [libspecs bindings]
   (if (seq libspecs)
     (let [fst (first libspecs)
           [libname & opts] (if (symbol? fst)
@@ -75,7 +82,8 @@
           refer (:refer opts)
           rename (:rename opts)
           munged (munge libname)
-          current-ns-str (str @sci/ns)
+          current-ns-str (str (get bindings sci/ns))
+          ;; _ (prn :str current-ns-str)
           current-ns (symbol current-ns-str)]
       (case libname
         ;; built-ins
@@ -92,13 +100,13 @@
             ;; could make reagent directly use loaded-modules via a global so we
             ;; don't have to hardcode this.
             (set! ^js (.-nbb$internal$react goog/global) mod))
-          (load-module "./nbb_reagent.js" libname as refer rename libspecs))
+          (load-module "./nbb_reagent.js" libname as refer rename libspecs bindings))
         (promesa.core)
-        (load-module "./nbb_promesa.js" libname as refer rename libspecs)
+        (load-module "./nbb_promesa.js" libname as refer rename libspecs bindings)
         (applied-science.js-interop)
-        (load-module "./nbb_js_interop.js" libname as refer rename libspecs)
+        (load-module "./nbb_js_interop.js" libname as refer rename libspecs bindings)
         (cljs.pprint clojure.pprint)
-        (load-module "./nbb_pprint.js" libname as refer rename libspecs)
+        (load-module "./nbb_pprint.js" libname as refer rename libspecs bindings)
         (if (string? libname)
           ;; TODO: parse properties
           (let [[libname properties] (str/split libname #"\$" 2)
@@ -120,7 +128,7 @@
                                  ;; Repeat hack from above
                                  (let [field (get rename field field)]
                                    (swap! (:env @sci-ctx) assoc-in [:namespaces current-ns :imports field] internal-subname))))
-                             (handle-libspecs (next libspecs)))
+                             (handle-libspecs (next libspecs) bindings))
                 mod (js/Promise.resolve
                      (or
                       ;; skip loading if module was already loaded
@@ -143,7 +151,7 @@
           (if (sci/eval-form @sci-ctx (list 'clojure.core/find-ns (list 'quote libname)))
             ;; built-in namespace
             (do (sci/eval-form @sci-ctx (list 'require (list 'quote fst)))
-                (handle-libspecs (next libspecs)))
+                (handle-libspecs (next libspecs) bindings))
             (let [file (str/replace (str munged) #"\." "/")
                   files [(str file ".cljs") (str file ".cljc")]
                   dirs (-> @ctx :classpath :dirs)
@@ -157,19 +165,21 @@
                 (-> (load-file the-file)
                     (.then
                      (fn [_]
-                       (when as
-                         (sci/eval-form @sci-ctx
-                                        (list 'clojure.core/alias
-                                              (list 'quote as)
-                                              (list 'quote libname))))
-                       (when (seq refer)
-                         (sci/eval-form @sci-ctx
-                                        (list 'clojure.core/refer
-                                              (list 'quote libname)
-                                              :only (list 'quote refer)
-                                              :rename (list 'quote rename))))))
+                       (with-bindings* bindings
+                         (fn []
+                           (when as
+                             (sci/eval-form @sci-ctx
+                                            (list 'clojure.core/alias
+                                                  (list 'quote as)
+                                                  (list 'quote libname))))
+                           (when (seq refer)
+                             (sci/eval-form @sci-ctx
+                                            (list 'clojure.core/refer
+                                                  (list 'quote libname)
+                                                  :only (list 'quote refer)
+                                                  :rename (list 'quote rename))))))))
                     (.then (fn [_]
-                             (handle-libspecs (next libspecs)))))
+                             (handle-libspecs (next libspecs) bindings))))
                 ;; here, let's look for classes
                 (if-let [clazz (get-in @sci-ctx [:class->opts libname :class])]
                   (do (when as
@@ -183,11 +193,11 @@
                             (swap! (:env @sci-ctx)
                                    assoc-in
                                    [:namespaces current-ns :imports field] internal-subname))))
-                      (handle-libspecs (next libspecs)))
+                      (handle-libspecs (next libspecs) bindings))
                   (js/Promise.reject (js/Error. (str "Could not find namespace: " libname))))))))))
-    (js/Promise.resolve @sci/ns)))
+    (js/Promise.resolve (get bindings sci/ns))))
 
-(defn eval-ns-form [ns-form]
+(defn eval-ns-form [ns-form bindings]
   ;; the parsing is still very crude, we only support a subset of the ns form
   ;; and ignore everything but (:require clauses)
   (let [[_ns ns-name & ns-forms] ns-form
@@ -196,21 +206,24 @@
                                  (= :require (first ns-form)))) ns-forms)
         require-forms (get grouped true)
         other-forms (get grouped false)
-        ns-obj (sci/eval-form @sci-ctx (list 'do (list* 'ns ns-name other-forms) '*ns*))
+        ns-obj (with-bindings* bindings
+                 (fn []
+                   (sci/eval-form @sci-ctx (list 'do (list* 'ns ns-name other-forms) '*ns*))))
         libspecs (mapcat (fn [require-form]
                            (rest require-form))
                          require-forms)]
-    (with-async-bindings {sci/ns ns-obj}
-      (handle-libspecs libspecs))))
+    (handle-libspecs libspecs (assoc bindings sci/ns ns-obj))))
 
-(defn eval-require [require-form]
+(defn eval-require [require-form bindings]
   (let [args (rest require-form)
-        libspecs (mapv #(sci/eval-form @sci-ctx %) args)]
-    (handle-libspecs libspecs)))
+        libspecs (with-bindings* bindings
+                   (fn []
+                     (mapv #(sci/eval-form @sci-ctx %) args)))]
+    (handle-libspecs libspecs bindings)))
 
 (defn eval-expr
   "Evaluates top level forms asynchronously. Returns promise of last value."
-  [prev-val reader]
+  [prev-val reader bindings]
   (let [next-val (try
                    (sci/parse-next @sci-ctx reader {:features #{:cljs}})
                    (catch :default e
@@ -220,21 +233,26 @@
         (let [fst (first next-val)]
           (cond (= 'ns fst)
                 ;; async
-                (.then (eval-ns-form next-val)
+                (.then (eval-ns-form next-val bindings)
                        (fn [ns-obj]
-                         (eval-expr ns-obj reader)))
+                         (eval-expr ns-obj reader (assoc bindings sci/ns ns-obj))))
                 (= 'require fst)
                 ;; async
-                (.then (eval-require next-val)
+                (.then (eval-require next-val bindings)
                        (fn [_]
-                         (eval-expr nil reader)))
+                         (eval-expr nil reader bindings)))
                 :else
                 (try
-                  (eval-expr (sci/eval-form @sci-ctx next-val) reader)
+                  (eval-expr
+                   (with-bindings* bindings
+                     (fn []
+                       (sci/eval-form @sci-ctx next-val))) reader bindings)
                   (catch :default e
                     (js/Promise.reject e)))))
         (try
-          (eval-expr (sci/eval-form @sci-ctx next-val) reader)
+          (eval-expr (with-bindings* bindings
+                       (fn []
+                         (sci/eval-form @sci-ctx next-val))) reader bindings)
           (catch :default e
             (js/Promise.reject e))))
       ;; wrap normal value in promise
@@ -243,16 +261,14 @@
 (defn unwrap [eval-result]
   (.-val ^js eval-result))
 
-(defn eval-string* [s]
-  (with-async-bindings {sci/ns @sci/ns}
-    (let [reader (sci/reader s)]
-      (eval-expr nil reader))))
+(defn eval-string* [s bindings]
+  (let [reader (sci/reader s)]
+    (eval-expr nil reader (assoc bindings sci/ns @sci/ns))))
 
 (defn load-string
   "Asynchronously parses and evaluates string s. Returns promise."
   [s]
-  (with-async-bindings {warn-on-infer @warn-on-infer}
-    (eval-string* s)))
+  (eval-string* s {warn-on-infer @warn-on-infer}))
 
 (defn slurp
   "Asynchronously returns string from file f. Returns promise."
