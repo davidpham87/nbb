@@ -61,8 +61,8 @@
                                           (.log js/console val)))
                                  (.catch (fn [err]
                                            (error/error-handler err opts))))
-                             (prn val))))
-                       val))
+                             (prn val)))
+                         val)))
               (.catch (fn [err]
                         (error/error-handler err opts)
                         (when (:debug opts)

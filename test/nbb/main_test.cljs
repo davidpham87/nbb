@@ -31,7 +31,7 @@
   (is (= {:script "foo.cljs", :args '("1" "2" "3")} (main/parse-args ["foo.cljs" "1" "2" "3"])))
   (is (= {:classpath "src", :script "foo.cljs", :args nil} (main/parse-args ["--classpath" "src" "foo.cljs"]))))
 
-#_(deftest-async simple-require-test
+(deftest-async simple-require-test
   (-> (nbb/load-string "(ns foo (:require cljs.core clojure.set))
                         (and (some? cljs.core/inc) (some? clojure.set/union))")
       (.then nbb/unwrap)
@@ -66,9 +66,7 @@
       (.then nbb/unwrap)
       (.then nbb/unwrap)
       (.then (fn [val]
-               (is (= 6 val))))
-      )
-  )
+               (is (= 6 val))))))
 
 (def pf *print-fn*)
 
@@ -87,20 +85,21 @@
       (.then (fn [res]
                (is (= 6 res))))))
 
-;; (defn normalize-filename [s]
-;;   (str/replace s "\\" "/"))
+(defn normalize-filename [s]
+  (str/replace s "\\" "/"))
 
-;; (deftest-async load-file-test
-;;   (-> (main-with-args ["test-scripts/load_file_test.cljs"])
-;;       (.then (fn [res]
-;;                (let [f (normalize-filename (:file res))]
-;;                  (is (path/isAbsolute f))
-;;                  (is (str/ends-with? f "test-scripts/loaded_by_load_file_test.cljs")))
-;;                (is (:loaded-by-load-file-test/loaded res))
-;;                (is (= (:file res) (:file-via-dyn-var res)))
-;;                (let [f (normalize-filename (:load-file-test-file-dyn-var res))]
-;;                  (is (path/isAbsolute f))
-;;                  (is (str/ends-with? f "test-scripts/load_file_test.cljs" )))))))
+(deftest-async load-file-test
+  (-> (main-with-args ["test-scripts/load_file_test.cljs"])
+      (.then (fn [res]
+               (prn :res res)
+               (let [f (normalize-filename (:file res))]
+                 (is (path/isAbsolute f))
+                 (is (str/ends-with? f "test-scripts/loaded_by_load_file_test.cljs")))
+               (is (:loaded-by-load-file-test/loaded res))
+               (is (= (:file res) (:file-via-dyn-var res)))
+               (let [f (normalize-filename (:load-file-test-file-dyn-var res))]
+                 (is (path/isAbsolute f))
+                 (is (str/ends-with? f "test-scripts/load_file_test.cljs" )))))))
 
 (deftest-async eval-string-test
   (-> (nbb/load-string "(+ 1 2 3)")
